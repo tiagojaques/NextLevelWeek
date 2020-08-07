@@ -1,40 +1,53 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import React from 'react';
 
 import whatsappIcon from '../../assets/images/icons/whatsapp.svg';
 import './styles.css';
+import api from './../../services/api';
+interface TeacherItemProps {
+    teacher: {
+        id: number;
+        subject: string;
+        cost: number;
+        user_id: number;
+        name: string;
+        avatar: string;
+        whatsapp: string;
+        bio: string;
+    };
+}
+const registerConnection = (id: number, whatsapp: string) => {
+    return async (event: React.MouseEvent) => {
+        event.preventDefault();
+        api.post('connections', {
+            user_id: id,
+        });
+        window.open(`https://wa.me/${whatsapp}`, '_blank');
+    };
+};
 
-function TeacherItem() {
+const TeacherItem: React.FC<TeacherItemProps> = ({ teacher }) => {
     return (
         <article className="teacher-item">
             <header>
-                <img
-                    src="https://avatars3.githubusercontent.com/u/1149760?s=460&u=1e8e66fc15153554f4d23a2f40d8882390b01a8c&v=4"
-                    alt="Tiago Jaques"
-                />
+                <img src={teacher.avatar} alt={teacher.name} />
                 <div>
-                    <strong>Tiago Jaques</strong>
-                    <span>ETL</span>
+                    <strong>{teacher.name}</strong>
+                    <span>{teacher.subject}</span>
                 </div>
             </header>
-            <p>
-                Entusiasta das melhores tecnologias de química avançada.
-                <br />
-                <br />
-                Apaixonado por explodir coisas em laboratório e por mudar a vida das pessoas através de experiências.
-                Mais de 200.000 pessoas já passaram por uma das minhas explosões.
-            </p>
+            <p>{teacher.bio}</p>
             <footer>
                 <p>
                     Preço/Hora
-                    <strong>R$ 100,00</strong>
+                    <strong>R$ {teacher.cost}</strong>
                 </p>
-                <button type="button">
+                <button type="button" onClick={registerConnection(teacher.id, teacher.whatsapp)}>
                     <img src={whatsappIcon} alt="Whatsapp" />
                     Entrar em contato
                 </button>
             </footer>
         </article>
     );
-}
-
+};
 export default TeacherItem;

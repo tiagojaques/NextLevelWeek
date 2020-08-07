@@ -1,3 +1,4 @@
+/* eslint-disable func-names */
 import { Request, Response } from 'express';
 import db from '../database/connection';
 import convertHourToMinutes from '../utils/convertHourToMinutes';
@@ -15,14 +16,6 @@ export default class ClassesControlers {
     const time = filters.time as string;
     const subject = filters.subject as string;
 
-    if (!week_day || !subject || !time) {
-      return response.status(400).json({
-        error: 'Missing filters to search clasess',
-      });
-    }
-
-    const timeInMinutes = convertHourToMinutes(time);
-
     const classes = await db('classes')
       // eslint-disable-next-line prettier/prettier
       .whereExists(function(){
@@ -30,11 +23,33 @@ export default class ClassesControlers {
           .from('class_schedule')
           .whereRaw('`class_schedule`.`class_id` = `classes`.`id`')
           // eslint-disable-next-line prettier/prettier
-          .whereRaw('`class_schedule`.`week_day` = ??', [Number(week_day)])
-          .whereRaw('`class_schedule`.`from` <= ??', [Number(timeInMinutes)])
-          .whereRaw('`class_schedule`.`to` > ??', [Number(timeInMinutes)]);
+          .modify(function(queryBuilder) {
+            if (week_day) {
+              queryBuilder.whereRaw('`class_schedule`.`week_day` = ??', [
+                Number(week_day),
+              ]);
+            }
+          })
+          .modify(function (queryBuilder) {
+            if (time) {
+              queryBuilder.whereRaw('`class_schedule`.`to` > ??', [
+                Number(convertHourToMinutes(time)),
+              ]);
+            }
+          })
+          .modify(function (queryBuilder) {
+            if (time) {
+              queryBuilder.whereRaw('`class_schedule`.`from` <= ??', [
+                Number(convertHourToMinutes(time)),
+              ]);
+            }
+          });
       })
-      .where('classes.subject', '=', subject)
+      .modify(function (queryBuilder) {
+        if (subject) {
+          queryBuilder.where('classes.subject', '=', subject);
+        }
+      })
       .join('users', 'classes.user_id', '=', 'users.id')
       .select(['classes.*', 'users.*']);
 
@@ -51,6 +66,8 @@ export default class ClassesControlers {
       cost,
       schedule,
     } = request.body;
+
+    console.log(request.body);
 
     const trx = await db.transaction();
 
